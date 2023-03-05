@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:i2p_flutter/const.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'i2p_flutter_platform_interface.dart';
 import 'package:path_provider/path_provider.dart';
@@ -124,12 +125,25 @@ class I2pFlutter {
         .writeAsString(newFile);
   }
 
+  Future<String> readTunnelsConf() async {
+    final conf = File("${await getConfigDirectory()}/tunnels.conf");
+    return await conf.readAsString();
+  }
+
   Future<void> writeI2pdConf(String newFile) async {
     await File("${await getConfigDirectory()}/i2pd.conf")
         .writeAsString(newFile);
   }
 
+  Future<String> readI2pdConf() async {
+    final conf = File("${await getConfigDirectory()}/i2pd.conf");
+    return await conf.readAsString();
+  }
+
   Future<bool> runI2pd() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("flutter_i2pd.dontrun") == true) return false;
+
     await ensureDeath();
     final configDir = await getConfigDirectory();
     // return false;
