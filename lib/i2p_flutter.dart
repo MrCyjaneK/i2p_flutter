@@ -145,13 +145,21 @@ class I2pFlutter {
     if (prefs.getBool("flutter_i2pd.dontrun") == true) return false;
 
     await ensureDeath();
+    await Future.delayed(const Duration(seconds: 1));
+    if (await isRunning()) return false;
     final configDir = await getConfigDirectory();
     // return false;
+    //final result = await Process.start(
+    //  '/bin/sh',
+    //  [
+    //    '-c',
+    //    "cd $configDir && ${await getBinaryPath()} --datadir=$configDir",
+    //  ],
+    //);
     final result = await Process.start(
-      '/bin/sh',
+      await getBinaryPath(),
       [
-        '-c',
-        "cd $configDir && ${await getBinaryPath()} --datadir=$configDir",
+        "--datadir=$configDir",
       ],
     );
     result.stdout.transform(utf8.decoder).forEach(print);
@@ -162,22 +170,80 @@ class I2pFlutter {
   }
 
   Future<String?> getProcessInfo() async {
-    final configDir = await getConfigDirectory();
-    final result = await Process.run(
-      '/bin/sh',
-      [
-        '-c',
-        "cd $configDir && ps -p \$(cat i2pd.pid)",
-      ],
-    );
-    if (result.exitCode == 0) {
-      return result.stdout + "\n" + result.stderr;
+    try {
+      final configDir = await getConfigDirectory();
+      final result1 = await Process.run(
+        '/bin/sh',
+        [
+          '-c',
+          "cd $configDir && ps -p \$(cat i2pd.pid)",
+        ],
+      );
+      String output = result1.stdout + "\n" + result1.stderr;
+      if (result1.exitCode == 0 && output.contains('libi2pd.so')) {
+        // MIUI hack.
+        return output;
+      }
+    } catch (e) {
+      return e.toString();
     }
     return null;
   }
 
   Future<bool> isRunning() async {
+    try {
+      final response = await Dio().get("http://127.0.0.1:7070/");
+      return true;
+    } on DioError {
+      return false;
+    }
+
     return (await getProcessInfo()) != null;
+  }
+
+  Future<int> getUptimeSeconds() async {
+    try {
+      final response = await Dio().get(
+        "http://127.0.0.1:7070/",
+      );
+      List<String> resp1 = response.toString().split("\n");
+      resp1.removeWhere(
+        (element) => !element.contains(r'<div class="content"><b>Uptime:</b>'),
+      );
+      var resp2 = resp1[0]
+          .replaceAll(RegExp(' +'), ' ')
+          .replaceAll(r'<div class="content"><b>Uptime:</b>', "")
+          .replaceAll(r'<br>', '')
+          .replaceAll(RegExp(r'[^\w\s]+'), '');
+      if (resp2.startsWith(' ')) {
+        resp2 = resp2.substring(1);
+      }
+      final resp3 = resp2.split(" ");
+      int secs = 0;
+      for (var i = 1; i < resp3.length; i = i + 2) {
+        if (resp3[i].startsWith('day')) {
+          secs += int.parse(resp3[i - 1]) * 60 * 60 * 24;
+        }
+        if (resp3[i].startsWith('hour')) {
+          secs += int.parse(resp3[i - 1]) * 60 * 60;
+        }
+        if (resp3[i].startsWith('minute')) secs += int.parse(resp3[i - 1]) * 60;
+        if (resp3[i].startsWith('second')) secs += int.parse(resp3[i - 1]);
+      }
+
+      return secs;
+    } on DioError catch (e) {
+      if (e.response != null) {
+        print(e.response?.data);
+        print(e.response?.headers);
+        print(e.response?.requestOptions);
+      } else {
+        // Something happened in setting up or sending the request that triggered an Error
+        print(e.requestOptions);
+        print(e.message);
+      }
+    }
+    return 3600;
   }
 
   Future<Map<String, String>> getTunnelsList() async {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:i2p_flutter/i2p_flutter.dart';
 import 'package:i2p_flutter/widgets/serviceslist.dart';
@@ -48,6 +50,9 @@ class _I2PManagerPageState extends State<I2PManagerPage> {
               _titleText("i2pd.conf"),
               futureCodeText(futureValue: i2pFlutterPlugin.readI2pdConf()),
               const Divider(),
+              // _titleText("Uptime"),
+              // futureCodeText(futureValue: i2pFlutterPlugin.getUptimeString()),
+              const Divider(),
               const Text(
                   "If you, as an advanced user want to run i2pd on your own - here goes your config. After configuring your own unsupported method of running i2pd make sure to press \"Don't run i2pd\" button."),
               SizedBox(
@@ -74,12 +79,46 @@ class _I2PManagerPageState extends State<I2PManagerPage> {
                   icon: const Icon(Icons.start),
                   label: const Text("Run i2pd when requested"),
                 ),
-              )
+              ),
+              const Divider(),
+              const Text("Diagnosis tests below."),
+              futureCodeText(
+                  futureValue:
+                      _testExec('/bin/sh', ['-c', 'echo', 'Hello, World!'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('sh', ['-c', 'echo', 'Hello, World!'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('/bin/bash', ['-c', 'echo', 'Hello, World!'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('bash', ['-c', 'echo', 'Hello, World!'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('/bin/sh', ['-c', 'echo', 'Hello, World!'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('/bin/sh', ['-c', 'cat', '/nonexistent'])),
+              futureCodeText(
+                  futureValue:
+                      _testExec('/bin/sh', ['-c', 'echo This is test | cat'])),
+              futureCodeText(
+                  futureValue: _testExec('/bin/sh', ['-c', 'ps', '-p', '1'])),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<String> _testExec(String cmd, List<String> args) async {
+    try {
+      final pe = await Process.run(cmd, args);
+      return "$cmd $args: ${pe.exitCode};${pe.pid};${pe.stdout};${pe.stderr}";
+    } catch (e) {
+      return "$cmd $args: $e";
+    }
   }
 
   Text _titleText(String text) {
@@ -103,7 +142,7 @@ class futureCodeText extends StatefulWidget {
 }
 
 class _futureCodeTextState extends State<futureCodeText> {
-  String text = "...";
+  late String text = widget.futureValue.toString();
 
   @override
   void initState() {
@@ -117,12 +156,20 @@ class _futureCodeTextState extends State<futureCodeText> {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
-      text,
-      style: Theme.of(context)
-          .textTheme
-          .bodyMedium!
-          .copyWith(fontFamily: "monospace"),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.maxFinite,
+          child: SelectableText(
+            text,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium!
+                .copyWith(fontFamily: "monospace"),
+          ),
+        ),
+        const Divider(),
+      ],
     );
   }
 }
