@@ -74,9 +74,14 @@ class I2pFlutter {
   }
 
   Future<String> getConfigDirectory() async {
-    final dir = await getApplicationDocumentsDirectory();
-
-    final configDir = p.join(dir.path, ".config-i2p");
+    String dir = '';
+    if (Platform.isLinux) {
+      dir = Platform.environment['HOME']??'/nonexistent';
+      dir += "/.config/p3pch4t-i2p";
+    } else {
+      dir = (await getApplicationDocumentsDirectory()).path;
+    }
+    final configDir = p.join(dir, ".config-i2p");
     // create the directory
     File("$configDir/.dart_mkdir")
       ..createSync(recursive: true)
@@ -100,7 +105,7 @@ class I2pFlutter {
     if (Platform.isAndroid) {
       return (await I2pFlutterPlatform.instance.getBinaryPathNative())!;
     }
-    return "/TODO";
+    return "i2pd";
   }
 
   Future<bool> isBinaryPresent() async {
@@ -156,6 +161,7 @@ class I2pFlutter {
     //    "cd $configDir && ${await getBinaryPath()} --datadir=$configDir",
     //  ],
     //);
+
     final result = await Process.start(
       await getBinaryPath(),
       [

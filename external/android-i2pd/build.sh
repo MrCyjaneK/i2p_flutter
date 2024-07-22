@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x -e
 cd $(dirname $0)
 git clone https://github.com/PurpleI2P/i2pd-android --recursive || true
 

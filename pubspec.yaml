@@ -4,14 +4,14 @@ version: 0.0.1
 homepage:
 
 environment:
-  sdk: '>=2.19.2 <3.0.0'
+  sdk: ">=3.0.0 <4.0.0"
   flutter: ">=2.5.0"
 
 dependencies:
   dio: ^5.0.1
   flutter:
     sdk: flutter
-  http: ^0.13.5
+  http: ^1.2.2
   path: ^1.8.2
   path_provider: ^2.0.13
   plugin_platform_interface: ^2.0.2
